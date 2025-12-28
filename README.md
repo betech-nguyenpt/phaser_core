@@ -16,4 +16,12 @@
       - Phaser Discord Multiplayer Game Templates - Discord Activities Multiplayer
       - Rapier - Easily use the Rapier physics library with Phaser 3
    - Client Framework (React, Next.js, Vue, Angular, Svelte, SolidJS or Rapier)
+      - React: TypeScript or JavaScript
+         - Scene selection
+         - Single Scene
+      - Next.js
+      - Vue
+      - Angular
+      - Svelte
+      - SolidJS or Rapier
    - Web Bundler (Vite, Bun, Webpack, Remix, ESBuild, Parcel, Rollup or ImportMap)

@@ -9,6 +9,8 @@
       - Memory Card Game - Pair Matching Game
    - Middleware (Tauri [NEW], Discord Activities, Rune, Rapier Physics)
       - Tauri Template - Phaser + Tauri
+        - Need install Rust and Cargo
+           - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
       - Rune Multiplayer Tic Tac Toe - Phaser+Rune Multiplayer Tic-Tac-Toe
       - Phaser Discord Game Templates - Discord Activities
       - Phaser Discord Multiplayer Game Templates - Discord Activities Multiplayer

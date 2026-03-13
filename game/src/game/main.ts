@@ -28,6 +28,64 @@ const DEBUG_TEXT_ID    = 'debug-window-height-overlay-text';
 const CHANGE_SCENE_BUTTON_ID = 'debug-window-height-overlay-change-scene';
 const pointerState     = { x: 0, y: 0 };
 let currentSceneWithChange: (Phaser.Scene & { changeScene?: () => void }) | null = null;
+const debugMetadata = {
+    ipAddress: 'Loading...',
+    browserType: 'Unknown',
+    deviceCharacteristics: 'Unknown'
+};
+
+const detectBrowserType = () => {
+    const userAgent = navigator.userAgent;
+
+    if (userAgent.includes('Edg/')) {
+        return 'Microsoft Edge';
+    }
+    if (userAgent.includes('Firefox/')) {
+        return 'Firefox';
+    }
+    if (userAgent.includes('Chrome/') && !userAgent.includes('Edg/')) {
+        return 'Chrome';
+    }
+    if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) {
+        return 'Safari';
+    }
+
+    return 'Other';
+};
+
+const getDeviceCharacteristics = () => {
+    const anyNavigator = navigator as Navigator & {
+        deviceMemory?: number;
+        userAgentData?: {
+            mobile?: boolean;
+            platform?: string;
+        };
+    };
+
+    const memory = anyNavigator.deviceMemory ? `${anyNavigator.deviceMemory}GB RAM` : 'RAM N/A';
+    const cores = `${navigator.hardwareConcurrency} cores`;
+    const touch = `${navigator.maxTouchPoints} touch`;    
+    const screenSize = `${window.screen.width}x${window.screen.height}`;
+    const dpr = `dpr ${window.devicePixelRatio}`;
+    const platform = anyNavigator.userAgentData?.platform ?? navigator.platform ?? 'Unknown platform';
+
+    return `${platform}, ${memory}, ${cores}, ${touch}, ${screenSize}, ${dpr}`;
+};
+
+const fetchPublicIpAddress = async () => {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        if (!response.ok) {
+            return 'Unavailable';
+        }
+
+        const data = await response.json() as { ip?: string };
+        return data.ip ?? 'Unavailable';
+    }
+    catch {
+        return 'Unavailable';
+    }
+};
 
 const createOrUpdateDebugOverlay = (parent: string) => {
     const parentElement = document.getElementById(parent) ?? document.body;
@@ -83,6 +141,9 @@ const createOrUpdateDebugOverlay = (parent: string) => {
         `mouseX             : ${Math.round(pointerState.x)}`,
         `mouseY             : ${Math.round(pointerState.y)}`,
         `sceneKey           : ${currentSceneWithChange?.scene.key ?? 'N/A'}`,
+        `ipAddress          : ${debugMetadata.ipAddress}`,
+        `browserType        : ${debugMetadata.browserType}`,
+        `deviceInfo         : ${debugMetadata.deviceCharacteristics}`,
     ];
 
     const debugText = overlay.querySelector(`#${DEBUG_TEXT_ID}`);
@@ -100,8 +161,16 @@ const createOrUpdateDebugOverlay = (parent: string) => {
 const StartGame = (parent: string) => {
     const game = new Game({ ...config, parent });
 
+    debugMetadata.browserType = detectBrowserType();
+    debugMetadata.deviceCharacteristics = getDeviceCharacteristics();
+
     EventBus.on('current-scene-ready', (scene: Phaser.Scene) => {
         currentSceneWithChange = scene as Phaser.Scene & { changeScene?: () => void };
+        createOrUpdateDebugOverlay(parent);
+    });
+
+    void fetchPublicIpAddress().then((ipAddress) => {
+        debugMetadata.ipAddress = ipAddress;
         createOrUpdateDebugOverlay(parent);
     });
 
@@ -109,6 +178,7 @@ const StartGame = (parent: string) => {
 
     window.addEventListener('resize', () => {
         game.scale.resize(window.innerWidth, window.innerHeight);
+        debugMetadata.deviceCharacteristics = getDeviceCharacteristics();
         createOrUpdateDebugOverlay(parent);
     });
 

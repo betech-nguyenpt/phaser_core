@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { IRefPhaserGame, PhaserGame } from './PhaserGame';
 import { Overlay } from './Overlay';
 import { MainMenu } from './game/scenes/MainMenu';
+import { Common } from './game/utils/Common';
 
 function App()
 {
@@ -11,6 +12,23 @@ function App()
     //  References to the PhaserGame component (game and scene are exposed)
     const phaserRef = useRef<IRefPhaserGame | null>(null);
     const [spritePosition, setSpritePosition] = useState({ x: 0, y: 0 });
+    const [mouse, setMouse] = useState({ x: 0, y: 0 });
+    const [ipAddress, setIpAddress] = useState('Loading...');
+    const [deviceInfo, setDeviceInfo] = useState('');
+    const [browserType, setBrowserType] = useState('');
+    // Debug info setup
+    useEffect(() => {
+        const handlePointerMove = (event: PointerEvent) => {
+            setMouse({ x: event.clientX, y: event.clientY });
+        };
+        window.addEventListener('pointermove', handlePointerMove);
+        setDeviceInfo(Common.fnGetDeviceCharacteristics());
+        setBrowserType(Common.fnGetBrowserType());
+        Common.fnFetchPublicIpAddress().then(setIpAddress);
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+        };
+    }, []);
 
     const changeScene = () => {
 
@@ -86,18 +104,25 @@ function App()
             <PhaserGame ref={phaserRef} currentActiveScene={currentScene} />
             <Overlay>
                 <button className="button" onClick={changeScene}>Change Scene</button>
-            </Overlay>
-            <div>
                 <div>
                     <button disabled={canMoveSprite} className="button" onClick={moveSprite}>Toggle Movement</button>
-                </div>
-                <div className="spritePosition">Sprite Position:
-                    <pre>{`{\n  x: ${spritePosition.x}\n  y: ${spritePosition.y}\n}`}</pre>
                 </div>
                 <div>
                     <button className="button" onClick={addSprite}>Add New Sprite</button>
                 </div>
-            </div>
+                <div style={{ marginTop: 8 }}>
+                    window.innerHeight      : {`${Common.fnGetWindowHeight()}`}px<br/>
+                    window.innerWidth       : {`${Common.fnGetWindowWidth()}`}px<br/>
+                    spritePosX              : {`${spritePosition.x}`}<br/>
+                    spritePosY              : {`${spritePosition.y}`}<br/>
+                
+                    <div>mouseX : {mouse.x}</div>
+                    <div>mouseY : {mouse.y}</div>
+                    <div>ipAddress : {ipAddress}</div>
+                    <div>deviceInfo : <pre style={{ display: 'inline', margin: 0 }}>{deviceInfo}</pre></div>
+                    <div>browserType : {browserType}</div>
+                </div>
+            </Overlay>
         </div>
     )
 }

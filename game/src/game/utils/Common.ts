@@ -81,7 +81,7 @@ export class Common
         const dpr = `dpr ${window.devicePixelRatio}`;
         const platform = anyNavigator.userAgentData?.platform ?? navigator.platform ?? 'Unknown platform';
 
-        return `${platform}\n                     ${memory}\n                     ${cores}\n                     ${screenSize}\n                     ${dpr}`;
+        return `${platform}\n             ${memory}\n             ${cores}\n             ${screenSize}\n             ${dpr}`;
     };
 
     static fnGetNodeVersion = () => {
@@ -128,7 +128,7 @@ export class Common
             debugText.style.pointerEvents   = 'none';
             overlay.appendChild(debugText);
 
-            parentElement.appendChild(overlay);
+            // parentElement.appendChild(overlay);
         }
 
         const debugLinesData = [

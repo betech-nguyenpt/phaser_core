@@ -11,6 +11,8 @@ function App()
 
     //  References to the PhaserGame component (game and scene are exposed)
     const phaserRef = useRef<IRefPhaserGame | null>(null);
+    const followerSpriteRef = useRef<Phaser.GameObjects.Sprite | null>(null);
+    const followerCleanupRef = useRef<(() => void) | null>(null);
     const [spritePosition, setSpritePosition] = useState({ x: 0, y: 0 });
     const [mouse, setMouse] = useState({ x: 0, y: 0 });
     const [ipAddress, setIpAddress] = useState('Loading...');
@@ -27,6 +29,11 @@ function App()
         Common.fnFetchPublicIpAddress().then(setIpAddress);
         return () => {
             window.removeEventListener('pointermove', handlePointerMove);
+            if (followerCleanupRef.current)
+            {
+                followerCleanupRef.current();
+                followerCleanupRef.current = null;
+            }
         };
     }, []);
 
@@ -71,29 +78,54 @@ function App()
 
             if (scene)
             {
-                // Add more stars
-                const x = Phaser.Math.Between(64, scene.scale.width - 64);
-                const y = Phaser.Math.Between(64, scene.scale.height - 64);
-    
-                //  `add.sprite` is a Phaser GameObjectFactory method and it returns a Sprite Game Object instance
-                const star = scene.add.sprite(x, y, 'star');
-    
-                //  ... which you can then act upon. Here we create a Phaser Tween to fade the star sprite in and out.
-                //  You could, of course, do this from within the Phaser Scene code, but this is just an example
-                //  showing that Phaser objects and systems can be acted upon from outside of Phaser itself.
-                scene.add.tween({
-                    targets: star,
-                    duration: 500 + Math.random() * 1000,
-                    alpha: 0,
-                    yoyo: true,
-                    repeat: -1
-                });
+                if (followerCleanupRef.current)
+                {
+                    followerCleanupRef.current();
+                    followerCleanupRef.current = null;
+                }
+
+                if (followerSpriteRef.current && followerSpriteRef.current.active)
+                {
+                    followerSpriteRef.current.destroy();
+                    followerSpriteRef.current = null;
+                }
+
+                const centerX = scene.scale.width * 0.5;
+                const centerY = scene.scale.height * 0.5;
+                const follower = scene.add.sprite(centerX, centerY, 'star').setDepth(200);
+
+                const updateFollower = () => {
+                    if (!follower.active)
+                    {
+                        return;
+                    }
+
+                    const pointer = scene.input.activePointer;
+                    follower.x = Phaser.Math.Linear(follower.x, pointer.worldX, 0.08);
+                    follower.y = Phaser.Math.Linear(follower.y, pointer.worldY, 0.08);
+                };
+
+                scene.events.on('update', updateFollower);
+
+                followerCleanupRef.current = () => {
+                    scene.events.off('update', updateFollower);
+                };
+
+                followerSpriteRef.current = follower;
             }
         }
     }
 
     // Event emitted from the PhaserGame component
     const currentScene = (scene: Phaser.Scene) => {
+
+        if (followerCleanupRef.current)
+        {
+            followerCleanupRef.current();
+            followerCleanupRef.current = null;
+        }
+
+        followerSpriteRef.current = null;
 
         setCanMoveSprite(scene.scene.key !== 'MainMenu');
         

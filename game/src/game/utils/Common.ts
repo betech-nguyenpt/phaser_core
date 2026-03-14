@@ -84,7 +84,21 @@ export class Common
         return `${platform}\n                     ${memory}\n                     ${cores}\n                     ${screenSize}\n                     ${dpr}`;
     };
 
-    static fnOverlay = (parent: string) => {
+    static fnGetNodeVersion = () => {
+        const match = navigator.userAgent.match(/Node.js\/(\d+\.\d+\.\d+)/);
+        return match?.[1] ?? 'Browser';
+    }
+
+    static fnGetPhaserVersion = () => {
+        return (typeof Phaser !== 'undefined' && Phaser.VERSION) ? Phaser.VERSION : '3.90.0';
+    }
+
+    /**
+     * Create overlay and update content
+     * @param parent Parent element
+     * @param debugData Debug data
+     */
+    static fnOverlay = (parent: string, debugData: {[key: string]: string}) => {
         const DEBUG_OVERLAY_ID = 'debug-window-overlay';
         const DEBUG_TEXT_ID    = 'debug-window-overlay-text';
         const parentElement = document.getElementById(parent) ?? document.body;
@@ -120,6 +134,13 @@ export class Common
         const debugLinesData = [
             `window.innerHeight : ${Common.fnGetWindowHeight()}px`,
             `window.innerWidth  : ${Common.fnGetWindowWidth()}px`,
+            `mouseX             : ${debugData.mouseX}`,
+            `mouseY             : ${debugData.mouseY}`,
+            `ipAddress          : ${debugData.ipAddress}`,
+            `deviceInfo         : ${debugData.deviceInfo}`,
+            `browserType        : ${debugData.browserType}`,
+            `nodeVersion        : ${Common.fnGetNodeVersion() ?? 'Unknown'}`,
+            `phaserVersion      : ${Common.fnGetPhaserVersion() ?? 'Unknown'}`,
         ];
 
         const debugText = overlay.querySelector(`#${DEBUG_TEXT_ID}`);

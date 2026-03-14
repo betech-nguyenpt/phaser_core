@@ -32,7 +32,7 @@ function App()
 
     const changeScene = () => {
 
-        if(phaserRef.current)
+        if (phaserRef.current)
         {     
             const scene = phaserRef.current.scene as MainMenu;
             
@@ -45,7 +45,7 @@ function App()
 
     const moveSprite = () => {
 
-        if(phaserRef.current)
+        if (phaserRef.current)
         {
 
             const scene = phaserRef.current.scene as MainMenu;

@@ -8,7 +8,7 @@ interface OverlayProps {
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   top: 8,
-  left: 8,
+  right: 8,
   zIndex: 99999,
   pointerEvents: 'auto',
   display: 'flex',

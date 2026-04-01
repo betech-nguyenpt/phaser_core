@@ -41,6 +41,7 @@ const SEGMENT_SPACING = 10;
 
 export class Game extends Scene
 {
+    isPaused: boolean = false;
     camera: Phaser.Cameras.Scene2D.Camera;
     worldBackground: Phaser.GameObjects.TileSprite;
     foods: FoodParticle[];
@@ -59,6 +60,7 @@ export class Game extends Scene
     playerLength: number;
     totalFoodEaten: number;
     lastStatsEventAt: number;
+    isPaused: boolean = false;
 
     constructor ()
     {
@@ -122,6 +124,15 @@ export class Game extends Scene
             lineSpacing: 4
         }).setScrollFactor(0).setDepth(20);
 
+        this.input.keyboard?.on('keydown-SPACE', () => {
+            this.isPaused = !this.isPaused;
+            if (this.isPaused) {
+                this.scene.pause();
+            } else {
+                this.scene.resume();
+            }
+        });
+
         this.minimapFrame = this.add.graphics().setScrollFactor(0).setDepth(20);
 
         this.events.on('shutdown', this.handleSceneShutdown, this);
@@ -129,10 +140,19 @@ export class Game extends Scene
 
         this.emitOverlayStats(true);
         EventBus.emit('current-scene-ready', this);
+
+        // Toggle pause with Space key
+        this.input.keyboard?.on('keydown-SPACE', () => {
+            this.isPaused = !this.isPaused;
+            // Optionally, show a pause overlay/message here
+        });
     }
 
     update (_time: number, delta: number)
     {
+        if (this.isPaused) {
+            return;
+        }
         const deltaSeconds = delta / 1000;
 
         for (const snake of this.snakes)

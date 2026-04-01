@@ -89,12 +89,10 @@ export class MainMenu extends Scene
 
         this.startButton.on('pointerover', () => {
             buttonBackground.setFillStyle(0x6ae48d);
-            this.startButton.setScale(1.04);
         });
 
         this.startButton.on('pointerout', () => {
             buttonBackground.setFillStyle(0x47c96d);
-            this.startButton.setScale(1);
         });
 
         this.startButton.on('pointerdown', () => {

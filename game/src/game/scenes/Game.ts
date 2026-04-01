@@ -4,12 +4,18 @@ import { SNAKE_ARENA_STATS_EVENT } from '../utils/SnakeArena';
 
 type SnakeId = 'player' | `bot-${number}`;
 
+/**
+ * Food particle
+ */
 interface FoodParticle
 {
     sprite: Phaser.GameObjects.Arc;
     value: number;
 }
 
+/**
+ * Snake Entity
+ */
 interface SnakeEntity
 {
     id: SnakeId;
@@ -30,17 +36,23 @@ interface SnakeEntity
     label?: Phaser.GameObjects.Text;
 }
 
-const WORLD_SIZE = 5000;
-const HALF_WORLD_SIZE = WORLD_SIZE * 0.5;
-const FOOD_GRID_SIZE = 1000;
-const INITIAL_FOOD_COUNT = Math.floor((WORLD_SIZE / FOOD_GRID_SIZE) * (WORLD_SIZE / FOOD_GRID_SIZE) * 0.02);
-const BOT_COUNT = 10;
-const PLAYER_INITIAL_LENGTH = 30;
-const FOOD_RADIUS = 4;
-const SEGMENT_SPACING = 10;
+//-----------------------------------------------------
+// Constants
+//-----------------------------------------------------
+const WORLD_SIZE            = 5000;                     // Size of world
+const HALF_WORLD_SIZE       = WORLD_SIZE * 0.5;         // Size of half world
+const FOOD_GRID_SIZE        = 1000;                     // Food grid size
+const INITIAL_FOOD_COUNT    = Math.floor((WORLD_SIZE / FOOD_GRID_SIZE) * (WORLD_SIZE / FOOD_GRID_SIZE) * 0.04); // Food cound
+const BOT_COUNT             = 10;                       // Bot cound
+const PLAYER_INITIAL_LENGTH = 30;                       // Init length
+const FOOD_RADIUS           = 4;                        // Food radius
+const SEGMENT_SPACING       = 10;                       // Segment spacing
 
 export class Game extends Scene
 {
+    //-----------------------------------------------------
+    // Properties
+    //-----------------------------------------------------
     isPaused: boolean = false;
     camera: Phaser.Cameras.Scene2D.Camera;
     worldBackground: Phaser.GameObjects.TileSprite;
@@ -60,54 +72,76 @@ export class Game extends Scene
     playerLength: number;
     totalFoodEaten: number;
     lastStatsEventAt: number;
-    isPaused: boolean = false;
 
+    //-----------------------------------------------------
+    // Methods
+    //-----------------------------------------------------
+    /**
+     * Constructor
+     */
     constructor ()
     {
         super('Game');
     }
 
+    /**
+     * Create method
+     */
     create ()
     {
-        this.foods = [];
-        this.snakes = [];
-        this.playerLength = PLAYER_INITIAL_LENGTH;
-        this.totalFoodEaten = 0;
-        this.lastStatsEventAt = 0;
+        // Init values
+        this.foods              = [];
+        this.snakes             = [];
+        this.playerLength       = PLAYER_INITIAL_LENGTH;
+        this.totalFoodEaten     = 0;
+        this.lastStatsEventAt   = 0;
 
-        this.camera = this.cameras.main;
+        // Set camera value
+        this.camera             = this.cameras.main;
         this.camera.setBackgroundColor(0x06141f);
         this.camera.setBounds(-HALF_WORLD_SIZE, -HALF_WORLD_SIZE, WORLD_SIZE, WORLD_SIZE);
         this.camera.roundPixels = false;
 
+        /**
+         * The World boundary is an invisible rectangle that defines the edges of the World.
+         * If a Body is set to collide with the world bounds then it will automatically stop when it reaches any of the edges.
+         * You can optionally set which edges of the boundary should be checked against.
+         */
         this.physics.world.setBounds(-HALF_WORLD_SIZE, -HALF_WORLD_SIZE, WORLD_SIZE, WORLD_SIZE);
 
+        // Set world background
         this.worldBackground = this.add.tileSprite(0, 0, WORLD_SIZE, WORLD_SIZE, 'background')
             .setAlpha(0.16)
             .setTint(0x3b5f83);
 
+        // Set world boundary
         this.add.rectangle(0, 0, WORLD_SIZE, WORLD_SIZE)
-            .setStrokeStyle(32, 0x96b9d8, 0.35)
+            //.setStrokeStyle(32, 0x96b9d8, 0.35)
+            .setStrokeStyle(32, 0xff0000, 1)
             .setDepth(-1);
 
+        // Set world grid
         this.createWorldGrid();
+        // Create food
         this.createFoods(INITIAL_FOOD_COUNT);
-
+        // Create player object
         this.playerSnake = this.createSnake('player', true, PLAYER_INITIAL_LENGTH, 0x58f08a);
-        this.snakes.push(this.playerSnake);
+        this.snakes.push(this.playerSnake); // Save to array
 
+        // Create bot snake
         for (let index = 0; index < BOT_COUNT; index++)
         {
             this.snakes.push(this.createSnake(`bot-${index}`, false, Phaser.Math.Between(28, 90), Phaser.Display.Color.RandomRGB().color));
         }
-
+        // When enabled the Camera will automatically adjust its scroll position to keep the target Game Object in its center.
         this.camera.startFollow(this.playerSnake.segments[0], true, 0.12, 0.12);
         this.camera.setZoom(1.05);
 
         this.cursors = this.input.keyboard?.createCursorKeys();
         this.wasdKeys = this.input.keyboard?.addKeys('W,A,S,D') as Game['wasdKeys'];
-
-        this.worldLabel = this.add.text(24, 24, '', {
+        // States label
+        var leftHub = 70;
+        this.worldLabel = this.add.text(leftHub, 50, '', {
             fontFamily: 'Arial Black',
             fontSize: 20,
             color: '#e9f7ff',
@@ -115,7 +149,7 @@ export class Game extends Scene
             strokeThickness: 5
         }).setScrollFactor(0).setDepth(20);
 
-        this.statsLabel = this.add.text(24, 58, '', {
+        this.statsLabel = this.add.text(leftHub, 88, '', {
             fontFamily: 'Arial',
             fontSize: 16,
             color: '#d3e9f6',
@@ -123,7 +157,7 @@ export class Game extends Scene
             strokeThickness: 4,
             lineSpacing: 4
         }).setScrollFactor(0).setDepth(20);
-
+        // Handle pause game
         this.input.keyboard?.on('keydown-SPACE', () => {
             this.isPaused = !this.isPaused;
             if (this.isPaused) {
@@ -132,7 +166,7 @@ export class Game extends Scene
                 this.scene.resume();
             }
         });
-
+        // Mini map
         this.minimapFrame = this.add.graphics().setScrollFactor(0).setDepth(20);
 
         this.events.on('shutdown', this.handleSceneShutdown, this);
@@ -148,6 +182,12 @@ export class Game extends Scene
         });
     }
 
+    /**
+     * Update game loop
+     * @param _time Time
+     * @param delta Delta
+     * @returns 
+     */
     update (_time: number, delta: number)
     {
         if (this.isPaused) {
@@ -179,6 +219,9 @@ export class Game extends Scene
         this.refreshHud();
     }
 
+    /**
+     * Change scene
+     */
     changeScene ()
     {
         this.scene.start('GameOver', {
@@ -188,6 +231,12 @@ export class Game extends Scene
         });
     }
 
+    //-----------------------------------------------------
+    // Private Methods
+    //-----------------------------------------------------
+    /**
+     * Create World grid
+     */
     private createWorldGrid ()
     {
         const graphics = this.add.graphics();
@@ -204,14 +253,23 @@ export class Game extends Scene
         graphics.strokeRect(-HALF_WORLD_SIZE, -HALF_WORLD_SIZE, WORLD_SIZE, WORLD_SIZE);
     }
 
+    /**
+     * Create food
+     * @param count Count number 
+     */
     private createFoods (count: number)
     {
         for (let index = 0; index < count; index++)
         {
-            this.spawnFoodAt(this.getRandomWorldPoint(), Phaser.Math.Between(1, 3));
+            this.spawnFoodAt(this.getRandomWorldPoint(), Phaser.Math.Between(1, 10));
         }
     }
 
+    /**
+     * Spawn food
+     * @param position Position 
+     * @param value Value of radius
+     */
     private spawnFoodAt (position: Phaser.Math.Vector2, value: number = 1)
     {
         const radius = FOOD_RADIUS + value;
@@ -220,6 +278,14 @@ export class Game extends Scene
         this.foods.push({ sprite, value });
     }
 
+    /**
+     * Create snake
+     * @param id            ID
+     * @param isPlayer      Flag is player
+     * @param initialLength Init length
+     * @param color         Color
+     * @returns 
+     */
     private createSnake (id: SnakeId, isPlayer: boolean, initialLength: number, color: number): SnakeEntity
     {
         const start = this.getRandomWorldPoint(4000);
@@ -716,8 +782,9 @@ export class Game extends Scene
     private drawMinimap (positionX: number, positionY: number)
     {
         const size = 150;
-        const offsetX = this.scale.width - size - 24;
-        const offsetY = 24;
+        const padding = 100;
+        const offsetX = this.scale.width - size - padding;
+        const offsetY = this.scale.height - size - padding;
 
         this.minimapFrame.clear();
         this.minimapFrame.fillStyle(0x06141f, 0.78);

@@ -8,6 +8,7 @@ function App()
 {
     // The sprite can only be moved in the MainMenu Scene
     const [canMoveSprite, setCanMoveSprite] = useState(true);
+    const [currentSceneName, setCurrentSceneName] = useState('MainMenu');
 
     //  References to the PhaserGame component (game and scene are exposed)
     const phaserRef = useRef<IRefPhaserGame | null>(null);
@@ -127,6 +128,7 @@ function App()
 
         followerSpriteRef.current = null;
 
+        setCurrentSceneName(scene.scene.key);
         setCanMoveSprite(scene.scene.key !== 'MainMenu');
         
     }
@@ -147,6 +149,7 @@ function App()
                     window.innerWidth       : {`${Common.fnGetWindowWidth()}`}px<br/>
                     spritePosX              : {`${spritePosition.x}`}<br/>
                     spritePosY              : {`${spritePosition.y}`}<br/>
+                    currentScene            : {currentSceneName}<br/>
                 
                     <div>mouseX : {mouse.x}</div>
                     <div>mouseY : {mouse.y}</div>

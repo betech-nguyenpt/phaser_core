@@ -2,6 +2,8 @@ import { useRef, useState, useEffect } from 'react';
 import { IRefPhaserGame, PhaserGame } from './PhaserGame';
 import { Overlay } from './Overlay';
 import { MainMenu } from './game/scenes/MainMenu';
+import { EventBus } from './game/EventBus';
+import { SNAKE_ARENA_LEADERBOARD_EVENT, SNAKE_ARENA_STATS_EVENT, SnakeArenaLeaderboardEntry, SnakeArenaStats, loadSnakeArenaLeaderboard } from './game/utils/SnakeArena';
 import { Common } from './game/utils/Common';
 
 function App()
@@ -19,17 +21,41 @@ function App()
     const [ipAddress, setIpAddress] = useState('Loading...');
     const [deviceInfo, setDeviceInfo] = useState('');
     const [browserType, setBrowserType] = useState('');
+    const [arenaStats, setArenaStats] = useState<SnakeArenaStats>({
+        sceneName: 'MainMenu',
+        length: 0,
+        foodEaten: 0,
+        aliveBots: 0,
+        foodsOnMap: 0
+    });
+    const [leaderboard, setLeaderboard] = useState<SnakeArenaLeaderboardEntry[]>([]);
     // Debug info setup
     useEffect(() => {
         const handlePointerMove = (event: PointerEvent) => {
             setMouse({ x: event.clientX, y: event.clientY });
         };
+
+        const handleArenaStats = (stats: SnakeArenaStats) => {
+            setArenaStats(stats);
+            setCurrentSceneName(stats.sceneName);
+        };
+
+        const handleLeaderboard = (entries: SnakeArenaLeaderboardEntry[]) => {
+            setLeaderboard(entries);
+        };
+
         window.addEventListener('pointermove', handlePointerMove);
         setDeviceInfo(Common.fnGetDeviceCharacteristics());
         setBrowserType(Common.fnGetBrowserType());
         Common.fnFetchPublicIpAddress().then(setIpAddress);
+        setLeaderboard(loadSnakeArenaLeaderboard());
+        EventBus.on(SNAKE_ARENA_STATS_EVENT, handleArenaStats);
+        EventBus.on(SNAKE_ARENA_LEADERBOARD_EVENT, handleLeaderboard);
+
         return () => {
             window.removeEventListener('pointermove', handlePointerMove);
+            EventBus.off(SNAKE_ARENA_STATS_EVENT, handleArenaStats);
+            EventBus.off(SNAKE_ARENA_LEADERBOARD_EVENT, handleLeaderboard);
             if (followerCleanupRef.current)
             {
                 followerCleanupRef.current();
@@ -150,6 +176,11 @@ function App()
                     spritePosX              : {`${spritePosition.x}`}<br/>
                     spritePosY              : {`${spritePosition.y}`}<br/>
                     currentScene            : {currentSceneName}<br/>
+                    playerLength            : {arenaStats.length}<br/>
+                    foodEaten               : {arenaStats.foodEaten}<br/>
+                    aliveBots               : {arenaStats.aliveBots}<br/>
+                    foodsOnMap              : {arenaStats.foodsOnMap}<br/>
+                    bestLength              : {leaderboard[0]?.length ?? 0}<br/>
                 
                     <div>mouseX : {mouse.x}</div>
                     <div>mouseY : {mouse.y}</div>
